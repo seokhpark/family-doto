@@ -23,17 +23,17 @@ function renderCalendar() {
 
   const gridClass = activeView === 'week' ? 'week-grid' : 'month-grid';
   calendar.className = 'calendar calendar-scroll';
-  calendar.innerHTML = `<div class="${gridClass}">${dates.map((date, index) => {
+  calendar.innerHTML = `<div class="calendar-scroller" tabindex="0" aria-label="${activeView === 'week' ? '주간' : '월간'} 달력"><div class="calendar-inner"><div class="calendar-weekdays">${weekdays.map((weekday, day) => `<span class="weekday ${day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}">${weekday}</span>`).join('')}</div><div class="${gridClass}">${dates.map(date => {
     const day = date.getDay();
     const items = todos.filter(todo => todo.member === activeMember && todo.date === iso(date)).sort((a, b) => a.done - b.done);
     const holiday = day === 0 ? '일요일' : (date.getMonth() === 8 && date.getDate() === 28 ? '추석' : '');
     const faded = activeView === 'month' && date.getMonth() !== cursor.getMonth();
     return `<article class="week-day ${isSameDay(date, cursor) ? 'selected' : ''} ${faded ? 'outside-month' : ''}">
-      <div class="calendar-date-row"><span class="weekday ${day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}">${activeView === 'week' || index < 7 ? weekdays[day] : ''}</span><span class="date-num ${day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}">${date.getDate()}</span></div>
+      <div class="calendar-date-row"><span class="date-num ${day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}">${date.getDate()}</span></div>
       ${holiday ? `<span class="holiday">${holiday}</span>` : ''}
       <div class="calendar-todos">${items.map(calendarTodoMarkup).join('')}</div>
     </article>`;
-  }).join('')}</div>`;
+  }).join('')}</div></div></div>`;
 }
 
 function render() {
