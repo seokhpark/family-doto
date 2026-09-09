@@ -52,4 +52,22 @@ $('#calendar').addEventListener('change', event => {
   render();
 });
 
+let touchScroller = null;
+let touchStartX = 0;
+let touchStartScrollLeft = 0;
+
+$('#calendar').addEventListener('touchstart', event => {
+  touchScroller = event.target.closest('.calendar-scroller');
+  if (!touchScroller) return;
+  touchStartX = event.touches[0].clientX;
+  touchStartScrollLeft = touchScroller.scrollLeft;
+}, { passive: true });
+
+$('#calendar').addEventListener('touchmove', event => {
+  if (!touchScroller) return;
+  touchScroller.scrollLeft = touchStartScrollLeft + touchStartX - event.touches[0].clientX;
+}, { passive: true });
+
+$('#calendar').addEventListener('touchend', () => { touchScroller = null; }, { passive: true });
+
 render();
