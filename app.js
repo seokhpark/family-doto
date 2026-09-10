@@ -1,7 +1,8 @@
 const members = ['재준','세인','엄마','아빠'];
 let activeMember = '재준';
 let activeView = 'day';
-let cursor = new Date(2026, 8, 9);
+let cursor = new Date();
+let followsToday = true;
 const seed = [
   {id:1,member:'엄마',text:'마트에서 장보기',date:'2026-09-09',done:false},
   {id:2,member:'엄마',text:'세탁기 돌리기',date:'2026-09-09',done:false},
@@ -32,5 +33,17 @@ document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{activeView=btn.d
 $('#todoList').addEventListener('change',e=>{if(!e.target.matches('input'))return;const item=todos.find(t=>t.id===Number(e.target.dataset.id));item.done=e.target.checked;save();render()});
 $('#todoList').addEventListener('click',e=>{const button=e.target.closest('button[data-delete-id]');if(!button)return;if(!confirm('이 할 일을 삭제할까요?'))return;todos=todos.filter(t=>t.id!==Number(button.dataset.deleteId));save();render()});
 $('#quickAddForm').addEventListener('submit',e=>{e.preventDefault();const input=$('#quickTodoText');const text=input.value.trim();if(!text)return;todos.push({id:Date.now(),member:activeMember,text,date:iso(cursor),done:false});save();input.value='';render();input.focus()});
-function shift(amount){if(activeView==='day')cursor.setDate(cursor.getDate()+amount);else if(activeView==='week')cursor.setDate(cursor.getDate()+amount*7);else cursor.setMonth(cursor.getMonth()+amount);render()}
-$('#prevDate').onclick=()=>shift(-1);$('#nextDate').onclick=()=>shift(1);$('#todayButton').onclick=()=>{cursor=new Date();render()};render();
+function shift(amount){followsToday=false;if(activeView==='day')cursor.setDate(cursor.getDate()+amount);else if(activeView==='week')cursor.setDate(cursor.getDate()+amount*7);else cursor.setMonth(cursor.getMonth()+amount);render()}
+$('#prevDate').onclick=()=>shift(-1);$('#nextDate').onclick=()=>shift(1);$('#todayButton').onclick=()=>{cursor=new Date();followsToday=true;render()};
+
+function scheduleMidnightRefresh(){
+  const now=new Date();
+  const nextMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+  setTimeout(()=>{
+    if(followsToday){cursor=new Date();render()}
+    scheduleMidnightRefresh();
+  },nextMidnight-now+1000);
+}
+
+scheduleMidnightRefresh();
+render();
