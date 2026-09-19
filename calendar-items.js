@@ -48,7 +48,7 @@ $('#calendar').addEventListener('change', event => {
   const item = todos.find(todo => todo.id === Number(event.target.dataset.id));
   if (!item) return;
   item.done = event.target.checked;
-  save();
+  save(item);
   render();
 });
 

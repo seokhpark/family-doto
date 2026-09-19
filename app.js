@@ -1,4 +1,13 @@
 const members = ['재준','세인','엄마','아빠'];
+// Firebase 웹 설정값은 비밀 키가 아니며, 이 가족 앱의 공유 Firestore에 연결할 때 사용합니다.
+const firebaseConfig = {
+  apiKey: 'AIzaSyCIhIyuL0Skd9-h8j9e9ZbB7cI3gjkHFAT4',
+  authDomain: 'family-to-do-a5f6a.firebaseapp.com',
+  projectId: 'family-to-do-a5f6a',
+  storageBucket: 'family-to-do-a5f6a.firebasestorage.app',
+  messagingSenderId: '576401971676',
+  appId: '1:576401971676:web:3b21fb79c296cf1de89719'
+};
 let activeMember = '재준';
 let activeView = 'day';
 let cursor = new Date();
@@ -13,11 +22,47 @@ const seed = [
   {id:7,member:'세인',text:'책 20분 읽기',date:'2026-09-09',done:false},
 ];
 let todos = JSON.parse(localStorage.getItem('family-todos') || 'null') || seed;
+let firestore = null;
 const $ = s => document.querySelector(s);
 const pad = n => String(n).padStart(2,'0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const koreanDate = d => `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${['일','월','화','수','목','금','토'][d.getDay()]}요일`;
-const save = () => localStorage.setItem('family-todos', JSON.stringify(todos));
+function save(todo){
+  localStorage.setItem('family-todos', JSON.stringify(todos));
+  if (firestore && todo) firestore.setDoc(firestore.doc(firestore.db, 'todos', String(todo.id)), todo).catch(reportSyncError);
+}
+
+function reportSyncError(error){
+  console.error('Firebase 동기화 오류:', error);
+}
+
+async function enableSharedTodos(){
+  try {
+    const [appModule, firestoreModule] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js')
+    ]);
+    const db = firestoreModule.getFirestore(appModule.initializeApp(firebaseConfig));
+    firestore = { db, ...firestoreModule };
+    const setupDoc = firestoreModule.doc(db, 'meta', 'family-todo');
+
+    // 처음 접속한 기기의 기존 목록을 한 번만 공용 목록으로 옮깁니다.
+    await firestoreModule.runTransaction(db, async transaction => {
+      const setup = await transaction.get(setupDoc);
+      if (setup.exists()) return;
+      todos.forEach(todo => transaction.set(firestoreModule.doc(db, 'todos', String(todo.id)), todo));
+      transaction.set(setupDoc, { initializedAt: firestoreModule.serverTimestamp() });
+    });
+
+    firestoreModule.onSnapshot(firestoreModule.collection(db, 'todos'), snapshot => {
+      todos = snapshot.docs.map(item => item.data());
+      localStorage.setItem('family-todos', JSON.stringify(todos));
+      render();
+    }, reportSyncError);
+  } catch (error) {
+    reportSyncError(error);
+  }
+}
 function startOfWeek(d){const copy=new Date(d);copy.setDate(copy.getDate()-copy.getDay());return copy}
 function isSameDay(a,b){return iso(a)===iso(b)}
 function title(){ return activeView==='day' ? '오늘의 할 일' : activeView==='week' ? '이번 주 할 일' : '이번 달 할 일'; }
@@ -30,9 +75,9 @@ function escapeHtml(text){return text.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&
 function render(){ $('#memberName').textContent=activeMember;$('#dateLabel').textContent=koreanDate(cursor);renderCalendar();renderTodos(); }
 document.querySelectorAll('.member').forEach(btn=>btn.onclick=()=>{activeMember=btn.dataset.member;document.querySelectorAll('.member').forEach(b=>b.classList.toggle('active',b===btn));render()});
 document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{activeView=btn.dataset.view;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));render()});
-$('#todoList').addEventListener('change',e=>{if(!e.target.matches('input'))return;const item=todos.find(t=>t.id===Number(e.target.dataset.id));item.done=e.target.checked;save();render()});
-$('#todoList').addEventListener('click',e=>{const button=e.target.closest('button[data-delete-id]');if(!button)return;if(!confirm('이 할 일을 삭제할까요?'))return;todos=todos.filter(t=>t.id!==Number(button.dataset.deleteId));save();render()});
-$('#quickAddForm').addEventListener('submit',e=>{e.preventDefault();const input=$('#quickTodoText');const text=input.value.trim();if(!text)return;todos.push({id:Date.now(),member:activeMember,text,date:iso(cursor),done:false});save();input.value='';render();input.focus()});
+$('#todoList').addEventListener('change',e=>{if(!e.target.matches('input'))return;const item=todos.find(t=>t.id===Number(e.target.dataset.id));item.done=e.target.checked;save(item);render()});
+$('#todoList').addEventListener('click',e=>{const button=e.target.closest('button[data-delete-id]');if(!button)return;if(!confirm('이 할 일을 삭제할까요?'))return;const id=Number(button.dataset.deleteId);todos=todos.filter(t=>t.id!==id);localStorage.setItem('family-todos', JSON.stringify(todos));if(firestore)firestore.deleteDoc(firestore.doc(firestore.db,'todos',String(id))).catch(reportSyncError);render()});
+$('#quickAddForm').addEventListener('submit',e=>{e.preventDefault();const input=$('#quickTodoText');const text=input.value.trim();if(!text)return;const todo={id:Date.now(),member:activeMember,text,date:iso(cursor),done:false};todos.push(todo);save(todo);input.value='';render();input.focus()});
 function shift(amount){followsToday=false;if(activeView==='day')cursor.setDate(cursor.getDate()+amount);else if(activeView==='week')cursor.setDate(cursor.getDate()+amount*7);else cursor.setMonth(cursor.getMonth()+amount);render()}
 $('#prevDate').onclick=()=>shift(-1);$('#nextDate').onclick=()=>shift(1);$('#todayButton').onclick=()=>{cursor=new Date();followsToday=true;render()};
 
@@ -47,3 +92,4 @@ function scheduleMidnightRefresh(){
 
 scheduleMidnightRefresh();
 render();
+enableSharedTodos();
