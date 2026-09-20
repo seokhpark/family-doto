@@ -5,4 +5,8 @@
     overflow-y: visible;
     touch-action: pan-y;
   }
+
+  .week-day[data-date] {
+    cursor: pointer;
+  }
 }

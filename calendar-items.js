@@ -28,7 +28,7 @@ function renderCalendar() {
     const items = todos.filter(todo => todo.member === activeMember && todo.date === iso(date)).sort((a, b) => a.done - b.done);
     const holiday = day === 0 ? '일요일' : (date.getMonth() === 8 && date.getDate() === 28 ? '추석' : '');
     const faded = activeView === 'month' && date.getMonth() !== cursor.getMonth();
-    return `<article class="week-day ${isSameDay(date, cursor) ? 'selected' : ''} ${faded ? 'outside-month' : ''}">
+    return `<article class="week-day ${isSameDay(date, cursor) ? 'selected' : ''} ${faded ? 'outside-month' : ''}" data-date="${iso(date)}" tabindex="0" role="button" aria-label="${iso(date)} 선택">
       <div class="calendar-date-row"><span class="date-num ${day === 0 ? 'sunday' : day === 6 ? 'saturday' : ''}">${date.getDate()}</span></div>
       ${holiday ? `<span class="holiday">${holiday}</span>` : ''}
       <div class="calendar-todos">${items.map(calendarTodoMarkup).join('')}</div>
@@ -50,6 +50,29 @@ $('#calendar').addEventListener('change', event => {
   item.done = event.target.checked;
   save(item);
   render();
+});
+
+function selectCalendarDate(dateValue) {
+  cursor = new Date(`${dateValue}T00:00:00`);
+  followsToday = false;
+  render();
+  const input = $('#quickTodoText');
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => input.focus(), 300);
+}
+
+$('#calendar').addEventListener('click', event => {
+  if (activeView === 'day' || event.target.closest('input, label')) return;
+  const day = event.target.closest('.week-day[data-date]');
+  if (day) selectCalendarDate(day.dataset.date);
+});
+
+$('#calendar').addEventListener('keydown', event => {
+  if ((event.key !== 'Enter' && event.key !== ' ') || activeView === 'day') return;
+  const day = event.target.closest('.week-day[data-date]');
+  if (!day) return;
+  event.preventDefault();
+  selectCalendarDate(day.dataset.date);
 });
 
 let touchScroller = null;

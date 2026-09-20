@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-todo-v10';
+const CACHE_NAME = 'family-todo-v11';
 const ASSETS = ['./', './index.html', './style.css', './quick-add.css', './calendar-items.css', './mobile-calendar-fix.css', './todo-delete.css', './app.js', './calendar-items.js', './app-icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
