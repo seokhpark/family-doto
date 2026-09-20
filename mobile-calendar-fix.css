@@ -1,0 +1,8 @@
+/* The month calendar occupies the whole touch target on a phone. Let a vertical
+   gesture reach the page instead of treating it as horizontal scrolling. */
+@media (max-width: 760px) {
+  .calendar-scroller {
+    overflow-y: visible;
+    touch-action: pan-y;
+  }
+}
