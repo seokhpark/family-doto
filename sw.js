@@ -1,5 +1,5 @@
-const CACHE_NAME = 'family-todo-v11';
-const ASSETS = ['./', './index.html', './style.css', './quick-add.css', './calendar-items.css', './mobile-calendar-fix.css', './todo-delete.css', './app.js', './calendar-items.js', './app-icon.svg', './manifest.webmanifest'];
+const CACHE_NAME = 'family-todo-v12';
+const ASSETS = ['./', './index.html', './style.css', './quick-add.css', './calendar-items.css', './mobile-calendar-fix.css', './holiday-fix.css', './todo-delete.css', './app.js', './calendar-items.js', './app-icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
